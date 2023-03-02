@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
@@ -14,17 +15,40 @@ class OderTrackingPage extends StatefulWidget {
 
 class _OderTrackingPageState extends State<OderTrackingPage> {
   final Completer<GoogleMapController> _controller = Completer();
-
   static const LatLng sourceLocation = LatLng(37.33500927, -122.03272188);
-  static const LatLng destination = LatLng(37.33429383, -122.06600055);
-  LatLng? currentPostion = sourceLocation;
+  LatLng currentPostion = sourceLocation;
+  static CameraPosition _kGoogle = CameraPosition(
+    target: LatLng(sourceLocation.latitude, sourceLocation.longitude),
+    zoom: 10,
+  );
+
+  @override
+  void initState() {
+    _getUserLocation();
+    super.initState();
+  }
 
   void _getUserLocation() async {
-    var position = await GeolocatorPlatform.instance
-        .getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+    await Geolocator.requestPermission().then((value) async {
+      await Geolocator.getCurrentPosition(
+              desiredAccuracy: LocationAccuracy.high)
+          .then((value) {
+        if (value != null) {
+          setState(() {
+            currentPostion = LatLng(value.latitude, value.longitude);
 
-    setState(() {
-      currentPostion = LatLng(position.latitude, position.longitude);
+            log("current_location=========> ${value.latitude},, ${value.longitude}");
+
+            _kGoogle = CameraPosition(
+              target: LatLng(value.latitude, value.longitude),
+              zoom: 14,
+            );
+          });
+        }
+      });
+    }).onError((error, stackTrace) async {
+      await Geolocator.requestPermission();
+      print("ERROR" + error.toString());
     });
   }
 
@@ -38,10 +62,39 @@ class _OderTrackingPageState extends State<OderTrackingPage> {
       ),
       body: GoogleMap(
         // onMapCreated: _onMapCreated,
-        initialCameraPosition: CameraPosition(
-          target: currentPostion!,
-          zoom: 10,
-        ),
+
+        mapType: MapType.normal,
+        // on below line setting user location enabled.
+        myLocationEnabled: true,
+        // on below line setting compass enabled.
+        compassEnabled: true,
+
+        onMapCreated: (controller) {
+          _controller.complete(controller);
+
+          Future.delayed(Duration(seconds: 1), () async {
+            GoogleMapController controller = await _controller.future;
+            controller.animateCamera(
+              CameraUpdate.newCameraPosition(
+                CameraPosition(
+                  target: currentPostion,
+                  zoom: 14.0,
+                ),
+              ),
+            );
+          });
+        },
+        initialCameraPosition: _kGoogle,
+
+        markers: Set<Marker>.of([
+          Marker(
+            markerId: MarkerId("1"),
+            position: LatLng(currentPostion.latitude, currentPostion.longitude),
+            infoWindow: InfoWindow(
+              title: 'My Current Location',
+            ),
+          )
+        ]),
       ),
     );
   }
