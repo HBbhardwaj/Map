@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:developer';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
@@ -36,9 +34,6 @@ class _OderTrackingPageState extends State<OderTrackingPage> {
         if (value != null) {
           setState(() {
             currentPostion = LatLng(value.latitude, value.longitude);
-
-            log("current_location=========> ${value.latitude},, ${value.longitude}");
-
             _kGoogle = CameraPosition(
               target: LatLng(value.latitude, value.longitude),
               zoom: 14,
@@ -87,7 +82,7 @@ class _OderTrackingPageState extends State<OderTrackingPage> {
         initialCameraPosition: _kGoogle,
 
         markers: Set<Marker>.of([
-          Marker(
+           Marker(
             markerId: MarkerId("1"),
             position: LatLng(currentPostion.latitude, currentPostion.longitude),
             infoWindow: InfoWindow(
